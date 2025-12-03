@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sir Pommin Jäljillä</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="main-header">
+            <h1>Sir Pommin Jäljillä</h1>
+            <p class="subtitle">The Great Superball Chase</p>
+        </header>
+
+        <div class="story-section" id="story-section">
+            <div class="story-box">
+                <h2>Tarina</h2>
+                <p id="story-text"></p>
+            </div>
+            <button id="skip-story-btn" class="btn-secondary">Ohita tarina</button>
+        </div>
+
+        <div class="start-section" id="start-section" style="display: none;">
+            <div class="form-group">
+                <label for="username-input">Syötä käyttäjänimi:</label>
+                <input type="text" id="username-input" placeholder="Käyttäjänimi" maxlength="50">
+            </div>
+            <div class="button-group">
+                <button id="start-game-btn" class="btn-primary">Aloita peli</button>
+                <button id="read-story-btn" class="btn-secondary">Lue tarina</button>
+            </div>
+            <div id="error-message" class="error-message"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+</body>
+</html>
+

@@ -1,0 +1,228 @@
+Plan: 
+Tämä on erinomainen projekti! Sinulla on jo toimiva pelilogiikka ja tietokanta, mikä on yleensä vaikein osa.
+
+Tässä on kuvaus pelistä projektidokumentaatiota varten sekä konkreettinen suunnitelma sen muuttamiseksi verkkosivuksi (HTML + CSS + Python-taustajärjestelmä).
+
+1. Pelin kuvaus (Projektin määrittely)
+Tätä tekstiä voit käyttää projektin esittelyssä tai "Tietoa pelistä" -osiossa.
+
+Pelin nimi: Sir Pommin Jäljillä (tai The Great Superball Chase)
+
+Genre: Opetuksellinen tekstiseikkailu / Lentosimulaattori-kevytversio
+
+Tarina: Pelaaja on menettänyt rakkaan, maagisen superpallonsa "Sir Pommin", joka on kimonnut taivaalle ja kadonnut johonkin päin maailmaa. Pelaajan tehtävä on matkustaa Helsingistä (EFHK) eri lentokentille ympäri maapalloa löytääkseen kadonneen ystävänsä.
+
+Pelimekaniikka:
+
+Liikkuminen: Pelaaja lentää lentokentältä toiselle syöttämällä ICAO-koodeja (esim. EGLL, KJFK). Peli laskee etäisyyden ja kulutetun matkan.
+
+Motivaatio (Polttoaine/Terveys): Matkustaminen ja virheelliset vastaukset kuluttavat pelaajan jaksamista. Motivaatiota saa lisää onnistumisista. Jos motivaatio loppuu, peli päättyy tappioon (masennus).
+
+Minipelit: Jokaisella lentokentällä on maantietoon tai kulttuuriin liittyvä tietovisakysymys. Oikea vastaus palkitaan pisteillä.
+
+Aarteen etsintä: Superpallo on piilotettu satunnaisesti yhdelle pelin lentokentistä.
+
+Voittokriteerit:
+
+Pelaajan on löydettävä superpallo.
+
+Pelaajan on palattava Helsinkiin (EFHK) pallon kanssa.
+
+Motivaatiotason on oltava paluuhetkellä riittävä (yli 10).
+
+2. Tekninen suunnitelma: Pythonista Web-sovellukseksi
+Koska pelisi pyörii Pythonilla ja käyttää SQL-tietokantaa, pelkkä HTML ja CSS eivät riitä, sillä ne ovat vain "ulkuori". Selain ei ymmärrä Python-koodia eikä voi yhdistää suoraan tietokoneesi tietokantaan tietoturvasyistä.
+
+Ratkaisu on Client-Server -malli (Asiakas-Palvelin).
+
+Shutterstock
+Tutki
+
+Miten tämä toimii:
+
+Frontend (HTML/CSS/JS): Se, mitä käyttäjä näkee selaimessa.
+
+Backend (Python + Flask): Sinun nykyinen koodisi muokataan toimimaan "palvelimena". Se ottaa vastaan käskyjä selaimelta (esim. "Lennä Lontooseen") ja palauttaa vastauksen (esim. "Lensit 1500km, tässä kysymys").
+
+Tietokanta: Pysyy samana, Python-backend juttelee sille.
+
+Vaihe 1: HTML-rakenne (Runko)
+Suunnitellaan käyttöliittymä, joka korvaa terminaalin tekstivirran. Jaetaan näyttö selkeisiin osiin.
+
+Luonnos sivuista:
+
+Aloitusnäkymä: Iso otsikko, lyhyt tarina, kenttä käyttäjänimelle ja "Aloita peli" -nappi.
+
+Pelinäkymä: Tämä on tärkein. Jaetaan se osiin (div):
+
+#stats-bar: Yläpalkki, jossa näkyy Motivaatio, Nykyinen kenttä (ICAO) ja Kuljettu matka.
+
+#game-log: Alue, johon ilmestyy tekstiä ("Lensit Lontooseen...", "Vastasit oikein!").
+
+#interaction-area:
+
+Jos ollaan lentämässä: Syöttökenttä ICAO-koodille ja "Lennä"-nappi.
+
+Jos on kysymys: Kysymysteksti ja 3-4 nappia vastausvaihtoehdoille.
+
+#map-container: (Vapaaehtoinen bonus) Kartta, jossa näkyy missä olet (esim. Leaflet.js).
+
+Esimerkki HTML-rakenteesta:
+
+HTML
+
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <title>Sir Pommin Jäljillä</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header id="stats-bar">
+            <div class="stat">Sijainti: <span id="location">EFHK</span></div>
+            <div class="stat">Motivaatio: <span id="motivation">10</span></div>
+            <div class="stat">Aarre: <span id="treasure">Ei löydetty</span></div>
+        </header>
+
+        <main>
+            <div id="story-box">
+                <p>Tervetuloa Helsinki-Vantaalle. Minne haluat lentää?</p>
+            </div>
+
+            <div id="controls">
+                <div id="fly-controls">
+                    <input type="text" id="icao-input" placeholder="Syötä ICAO (esim. EGLL)">
+                    <button onclick="fly()">Lennä!</button>
+                </div>
+                
+                <div id="quiz-controls" style="display:none;">
+                    <h3 id="question-text">Kysymys tulee tähän...</h3>
+                    <button class="answer-btn" onclick="answer('A')">A</button>
+                    <button class="answer-btn" onclick="answer('B')">B</button>
+                    <button class="answer-btn" onclick="answer('C')">C</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>
+Vaihe 2: CSS-tyylittely (Ulkonäkö)
+Tehdään pelistä visuaalinen.
+
+Värimaailma: Tumma tausta (yötaivas) tai lentokenttä-teema (sininen, valkoinen, harmaa).
+
+Fontit: Joku "terminaali"-tyylinen fontti (esim. 'Courier New') tarinaosioon tuomaan retrotunnelmaa, ja selkeä sans-serif (esim. 'Roboto') käyttöliittymään.
+
+Layout: Käytä Flexboxia keskittämään elementit.
+
+Esimerkki CSS-ideasta:
+
+CSS
+
+body {
+    background-color: #1a1a2e; /* Tumma sininen */
+    color: #e0e0e0;
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background-color: #16213e;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    width: 600px;
+    text-align: center;
+}
+
+#stats-bar {
+    display: flex;
+    justify-content: space-between;
+    background: #0f3460;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+button {
+    background-color: #e94560; /* Korostusväri */
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 5px;
+}
+
+button:hover {
+    background-color: #ff2e63;
+}
+
+input {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+Vaihe 3: Python Backend (Flask) - "Aivot"
+Tämä on se kriittinen silta. Sinun pitää asentaa Flask (pip install flask). Sen sijaan, että koodisi pyörii while True -loopissa, se odottaa pyyntöjä (request).
+
+Sinun täytyy pilkkoa nykyinen iso koodisi pienemmiksi funktioiksi, joita Flask kutsuu.
+
+Esimerkki Flask-palvelimen rakenteesta (app.py):
+
+Python
+
+from flask import Flask, request, jsonify
+# Importoi tähän omat tietokantafunktiosi
+
+app = Flask(__name__)
+
+# Reitti: Aloita uusi peli
+@app.route('/new_game', methods=['POST'])
+def new_game():
+    player_name = request.json['name']
+    # Kutsu täällä hae_tai_luo_käyttäjä(nimi)
+    # Palauta JSON-muodossa pelaajan ID ja aloitustiedot
+    return jsonify({"status": "game started", "location": "EFHK"})
+
+# Reitti: Lennä
+@app.route('/fly', methods=['POST'])
+def fly_to():
+    icao = request.json['icao']
+    player_id = request.json['id']
+    # Kutsu täällä lentää()-funktiosi logiikkaa (ilman input/print)
+    # Laske etäisyys, päivitä DB
+    # Palauta uusi sijainti ja mahdolliset viestit
+    return jsonify({"location": icao, "message": "Lensit Saksaan!"})
+
+# Reitti: Hae kysymys
+@app.route('/get_question')
+def get_question():
+    # Hae nykyisen sijainnin kysymys
+    return jsonify({"question": "Mikä on Saksan pääkaupunki?", "options": ["A", "B", "C"]})
+
+if __name__ == '__main__':
+    app.run(debug=True)
+Yhteenveto seuraavista askeleista
+Luo kansio projektille.
+
+Tee sinne kansiot static (CSS ja JS tiedostoille) ja templates (HTML tiedostolle), jos käytät Flaskia perinteisesti, tai pidä ne juuressa, jos teet puhtaan rajapinnan.
+
+Refaktoroi Python-koodisi: Poista input() ja print() komennot funktioista. Muuta funktiot sellaisiksi, että ne ottavat parametreja (esim. kohde_icao) ja palauttavat arvoja (esim. return "Lensit perille"), eivätkä tulosta ruudulle.
+
+Kirjoita Flask-koodi, joka käyttää näitä muokattuja funktioita.
+
+Rakenna HTML ja CSS käyttöliittymä.
+
+Kirjoita JavaScript (AJAX/Fetch), joka lähettää napin painalluksesta tiedon Flaskille ja päivittää ruudun vastauksen perusteella.
+
+Haluatko, että näytän esimerkin, miten yksi funktio (esim. arvo_aarre) muutetaan toimimaan tässä uudessa systeemissä?

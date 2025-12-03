@@ -1,0 +1,593 @@
+The old game: 
+# Tietokanta yhteys
+import mysql.connector
+import uuid
+import random
+import textwrap
+
+käyty_kentät = []
+yhteys = mysql.connector.connect(
+    host='127.0.0.1',
+    port=3306,
+    database='lentopeli',
+    user='root',
+    password='whopper',
+    autocommit=True
+)
+
+
+# Funktiot
+
+def arvo_aarre(pelaaja_id, yhteys):
+    kursori = yhteys.cursor()
+    global käyty_kentät
+
+    # Tarkistetaan onko pelaajalla jo aarre
+    kursori.execute("SELECT airport_ident, found FROM treasure WHERE player_id = %s", (pelaaja_id,))
+    tulos = kursori.fetchone()
+    if tulos is not None:
+        return tulos[0]  # Palautetaan olemassa oleva aarre
+
+    # Jos ei ole, arvotaan uusi aarre
+    airport_rows = lentokenttää()
+    airport_idents = [row[0] for row in airport_rows]
+
+    # Hae jo käydyt kentät
+    kursori.execute("SELECT käyty_kentät FROM game WHERE id = %s", (pelaaja_id,))
+    tulos = kursori.fetchone()
+    käyty_kentät = tulos[0].split(",") if tulos and tulos[0] else []
+    mahdolliset = [k for k in airport_idents if k not in käyty_kentät]
+
+    if not mahdolliset:
+        mahdolliset = airport_idents  # jos kaikki käyty, valitaan satunnainen
+
+    aarre_kenttä = random.choice(mahdolliset)
+
+    # Tallennetaan treasure-tauluun
+    kursori.execute("""
+        INSERT INTO treasure (player_id, airport_ident, found)
+        VALUES (%s, %s, %s)
+        ON DUPLICATE KEY UPDATE airport_ident = %s, found = %s
+    """, (pelaaja_id, aarre_kenttä, False, aarre_kenttä, False))
+
+    yhteys.commit()
+    #print(f"🎯 Uusi aarre arvottu kentälle {aarre_kenttä}.")
+    return aarre_kenttä
+
+def loppu(käyttäjä, pelaaja_id):
+    cursor = yhteys.cursor()
+    cursor.execute(
+        "SELECT motivaatio_taso, has_treasure, location FROM game WHERE id = %s",
+        (pelaaja_id,)
+    )
+    rows = cursor.fetchall()
+    cursor.close()
+
+    if not rows:
+        print("Pelaajaa ei löytynyt tietokannasta.")
+        return None
+
+    motivaatio_taso, has_treasure, location = rows[0]
+    print(f"Motivaatiotasosi on {motivaatio_taso}, "
+          f"{'sinulla on superpallo' if has_treasure else 'superpallo edelleen hukassa'}, "
+          f"sijaintisi ICAO-koodi on {location}")
+
+    if motivaatio_taso is None or motivaatio_taso <= 0:
+        print(f"{käyttäjä} menetti motivaationsa kokonaan ja masentui."
+              "\nHän palasi kotiinsa ja eli työkyvyttömänä elämänsä loppuun asti.")
+        exit(1)
+    elif motivaatio_taso <= 10 and has_treasure == 1 and location == "EFHK":
+        print(f"{käyttäjä} onnistui tuomaan Sir Pommin takaisin kotiin!"
+              "\nSir Pomm oli aivan entisellään. Edelleen yhtä sininen ja kimmoisa kuin ennenkin"
+              f"\n{käyttäjä} pompotteli superpalloaan onnellisena elämänsä loppuun saakka."
+              "\nEikä Sir Pomm enää lähtenyt matkoilleen.")
+    else:
+        return
+
+
+
+
+
+def onko_aarre_löydetty(pelaaja_id, yhteys):
+    kursori = yhteys.cursor()
+    kursori.execute("SELECT found FROM treasure WHERE player_id = %s", (pelaaja_id,))
+    tulos = kursori.fetchone()
+    if tulos is None:
+        return False
+    return bool(tulos[0])
+
+
+# Pien pelit
+
+def kysymys_EGLL():
+    kysymys = "\nMikä on Lontoon tunnettu historiallinen kellotorni, jota kutsutaan Elizabeth Toweriksi?\nA) Big Ben\nB) Ben Ten\nC) Big Ten\nD) London Eye"
+    oikea_vastaus = "A"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_CYYZ():
+    kysymys = "\nMikä on Kanadan Pääkaupunki?\nA) Toronto\nB) Edmonton\nC) Vancouver\nD) Ottawa"
+    oikea_vastaus = "D"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_EDDF():
+    kysymys = "\nMikä joki virtaa Saksan läpi ja on yksi Euroopan pisimmistä?\nA) Rein\nB) Tonava\nC) Seine\nD) Thames"
+    oikea_vastaus = "A"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_EHAM():
+    kysymys = "\nKuka tunnetuista taiteilijoista on Alankomaista kotoisin?\nA) Leonardo Da Vinci\nB) Ludwig van Beethoven\nC) Vincent van Gogh"
+    oikea_vastaus = "C"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_FAOR():
+    kysymys = "\nMikä vuori sijaitsee Etelä-Afrikassa?\nA) Pöytävuori\nB) Kilimanjaro\nC) Mount Kenya\nD) Drakensberg"
+    oikea_vastaus = "A"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_HECA():
+    kysymys = "\nMikä oli muinaisen Egyptin kirjoitusjärjestelmä?\nA) Kyrillinen\nB) Latinan kirjaimet\nC) Hieroglyfit"
+    oikea_vastaus = "C"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_KDFW():
+    kysymys = "\nMikä on Texasin osavaltion lempinimi?\nA) The Golden State\nB) The Sunshine State\nC) The Lone Star State\nD) The Empire State"
+    oikea_vastaus = "C"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_KJFK():
+    kysymys = "\nMikä oli New Yorkin alkuperäinen nimi, ennen kuin englantilaiset valtasivat kaupungin?\nA) York\nB) New Amsterdam\nC) Gotham"
+    oikea_vastaus = "B"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_KLAX():
+    kysymys = "\nMikä kuuluisa Los Angelesissa sijaitseva katu on tunnettu elokuvateollisuudestaan ja tähtien nimillä koristellusta jalkakäytävästään?\nA) Sunset Boulevard\nB) Mulholland Drive\nC) Hollywood Boulevard\nD) Rodeo Drive"
+    oikea_vastaus = "C"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_LEMD():
+    kysymys = "\nMissä Espanjan kaupungissa järjestetään kuuluisa La Tomatina, tomaattisota?\nA) Valencia\nB) Zaragoza\nC) Sevilla\nD) Buñol"
+    oikea_vastaus = "D"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_LFPG():
+    kysymys = "\nMikä näistä nähtävyyksistä ei ole Pariisissa?\nA) Notre Dame\nB) Riemukaari\nC) Louvre\nD) Mont Blanc"
+    oikea_vastaus = "D"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_NZAA():
+    kysymys = "\nMikä Uuden-Seelannin alkuperäiskansa on nimeltään?\nA) Maori\nB) Aboriginaalit\nC) Inuit\nD) Samoalaiset"
+    oikea_vastaus = "A"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_OMDB():
+    kysymys = "\nMikä on maailman korkeimman rakennuksen nimi, joka sijaitsee Dubaissa?"
+    oikea_vastaus = "burj khalifa"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_RJTT():
+    kysymys = "\nMinkä vuoren voi nähdä Tokiosta?\nA) Hakkoda\nB) Fuji\nC) Everest\nD) Hekla"
+    oikea_vastaus = "B"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_RKSI():
+    kysymys = "\nMikä on Etelä-Korean kansallisruoka?\nA) Sushi\nB) Pho\nC) Ramen\nD) Kimchi"
+    oikea_vastaus = "D"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_SBGR():
+    kysymys = "\nMikä on Brasilian suurin ja tunnetuin sademetsä, joka tunnetaan suuresta monimuotoisuudestaan?"
+    oikea_vastaus = "amazon"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_SKBO():
+    kysymys = "\nMikä on Kolumbian virallinen kieli?\nA) Portugali\nB) Ranska\nC) Englanti\nD) Espanja"
+    oikea_vastaus = "D"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_YSSY():
+    kysymys = "\nMikä on Australian Pääkaupunki?\nA) Sydney\nB) Canberra\nC) Melbourne\nD) Brisbane"
+    oikea_vastaus = "B"
+    return kysymys, oikea_vastaus
+
+
+def kysymys_ZBAA():
+    kysymys = "\nMikä kuuluisa historiallinen palatsialue sijaitsee Pekingissä?\nA) Kesäpalatsi\nB) Kielletty kaupunki\nC) Taivaallisen rauhan aukio\nD) Ming-haudat"
+    oikea_vastaus = "B"
+    return kysymys, oikea_vastaus
+
+
+# Motivaatio taso Funktio
+def päivitä_motivaatio_taso(pelaaja_id, yhteys, määrä):
+    kursori = yhteys.cursor()
+    kursori.execute("update game set Motivaatio_taso = Motivaatio_taso + %s where id = %s ", (määrä, pelaaja_id))
+    yhteys.commit()
+    print(f"📊 Pisteesi päivitetty: {'+' if määrä > 0 else ''}{määrä} pistettä!")
+    loppu(käyttäjä,pelaaja_id)
+
+
+# Funktio hoitaa yritykset, oikeat/väärät vastaukset ja pisteiden päivityksen
+
+def pelaa_minipeli(player_id, yhteys, kysymys, oikea_vastaus, max_yritykset=3):
+    print(kysymys)
+    yritys = 0
+
+    while yritys < max_yritykset:
+        vastaus = input(f"Yritys {yritys + 1}/{max_yritykset}: ")
+        yritys += 1
+
+        if vastaus.strip().lower() == oikea_vastaus.strip().lower():
+            print("✅ Oikein! Saat 1 pisteen.")
+            päivitä_motivaatio_taso(player_id, yhteys, +1)
+            return True
+        else:
+            print("❌ Väärin!")
+
+    print("😢 Yritykset loppuivat! Hävisit ja menetät 1 pisteen.")
+    päivitä_motivaatio_taso(player_id, yhteys, -1)
+    return False
+
+
+
+# Pien peli Funktio - antaa jokaselle kentälle oman pelin
+def käynnistä_peli(ICAO, pelaaja_id, yhteys):
+    pelit = {
+        "EGLL": kysymys_EGLL,
+        "LFPG": kysymys_LFPG,
+        "RJTT": kysymys_RJTT,
+        "OMDB": kysymys_OMDB,
+        "EDDF": kysymys_EDDF,
+        "EHAM": kysymys_EHAM,
+        "LEMD": kysymys_LEMD,
+        "KLAX": kysymys_KLAX,
+        "KJFK": kysymys_KJFK,
+        "CYYZ": kysymys_CYYZ,
+        "KDFW": kysymys_KDFW,
+        "ZBAA": kysymys_ZBAA,
+        "RKSI": kysymys_RKSI,
+        "YSSY": kysymys_YSSY,
+        "NZAA": kysymys_NZAA,
+        "SBGR": kysymys_SBGR,
+        "FAOR": kysymys_FAOR,
+        "HECA": kysymys_HECA,
+        "SKBO": kysymys_SKBO,
+        # "EFHK": kysymys_EFHK,
+    }
+
+    if ICAO in pelit:
+        kysymys, oikea_vastaus = pelit[ICAO]()  # kutsutaan kysymysfunktiota
+        pelaa_minipeli(pelaaja_id, yhteys, kysymys, oikea_vastaus)
+    else:
+        print("Tällä kentällä ei ole vielä minipeliä. ✈️")
+
+
+# Funktio jossa on lista lentokenttien ICAO koodeista
+
+def kaikki_lentokentät():
+    # Lista kaikista peliin kuuluvista ICAO-koodeista
+    return ["EFHK", "EGLL", "LFPG", "RJTT", "OMDB", "EDDF",
+            "EHAM", "LEMD", "KLAX", "KJFK", "CYYZ", "KDFW",
+            "ZBAA", "RKSI", "YSSY", "NZAA", "SBGR", "FAOR",
+            "HECA", "SKBO"]
+
+
+# Funktio lentämistä varten
+
+from geopy.distance import geodesic
+
+def hae_koordinaatit(ICAO, yhteys):
+    """Hakee lentokentän leveys- ja pituusasteet tietokannasta."""
+    kursori = yhteys.cursor()
+    kursori.execute("SELECT latitude_deg, longitude_deg FROM airport WHERE ident = %s", (ICAO,))
+    tulos = kursori.fetchone()
+    if tulos:
+        return tulos[0], tulos[1]
+    else:
+        return None, None
+
+def laske_etaisyys(lat1, lon1, lat2, lon2):
+    """Laskee etäisyyden GeoPy:n avulla kilometreinä."""
+    paikka1 = (lat1, lon1)
+    paikka2 = (lat2, lon2)
+    return geodesic(paikka1, paikka2).kilometers
+
+
+def lentää(käyttäjä, pelaaja_id, yhteys):
+    valid_kenttä = kaikki_lentokentät()
+    kursori = yhteys.cursor()
+
+    # 🔎 Hae nykyinen sijainti ja kuljettu matka
+    kursori.execute("SELECT location, matkustettu_matka FROM game WHERE id = %s", (pelaaja_id,))
+    tulos = kursori.fetchone()
+
+    if tulos is None:
+        print("❌ Pelaajaa ei löytynyt tietokannasta.")
+        return
+
+    nykyinen_sijainti, matkustettu_matka = tulos
+
+    while True:
+        ICAO = input("Syötä haluamasi lentokentän ICAO-koodi: ").upper()
+
+        if ICAO in valid_kenttä:
+            # 📍 Hae koordinaatit ja laske etäisyys
+            lat1, lon1 = hae_koordinaatit(nykyinen_sijainti, yhteys)
+            lat2, lon2 = hae_koordinaatit(ICAO, yhteys)
+
+            if None not in (lat1, lon1, lat2, lon2):
+                etaisyys = laske_etaisyys(lat1, lon1, lat2, lon2)
+                matkustettu_matka += etaisyys
+                print(f"🧭 Lensit {etaisyys:.0f} km. Kokonaismatka: {matkustettu_matka:.0f} km.")
+            else:
+                print("⚠️ Koordinaattitietoja ei löytynyt, etäisyyttä ei voitu laskea.")
+                etaisyys = 0
+
+            # 🗺️ Päivitä sijainti ja kokonaismatka tietokantaan
+            sql = '''UPDATE game 
+                     SET location = %s, screen_name = %s, matkustettu_matka = %s 
+                     WHERE id = %s'''
+            kursori.execute(sql, (ICAO, käyttäjä, matkustettu_matka, pelaaja_id))
+            yhteys.commit()
+
+            print(f"📍 Sijainti päivitetty! Olet nyt kentällä {ICAO}.")
+
+            # 🏆 Tarkista, onko pelaaja palannut Helsinkiin superpallon kanssa
+            if ICAO == "EFHK":
+                kursori.execute("SELECT has_treasure, Motivaatio_taso FROM game WHERE id = %s", (pelaaja_id,))
+                tulos = kursori.fetchone()
+                has_treasure = bool(tulos[0])
+                pisteet = tulos[1]
+
+                if has_treasure:
+                    print(f"{käyttäjä} onnistui tuomaan Sir Pommin takaisin kotiin!"
+                          "\nSir Pomm oli aivan entisellään. Edelleen yhtä sininen ja kimmoisa kuin ennenkin"
+                          f"\n{käyttäjä} pompotteli superpalloaan onnellisena elämänsä loppuun saakka."
+                          "\nEikä Sir Pomm enää lähtenyt matkoilleen.")
+                    exit()
+                else:
+                    print("📍 Olet Helsingissä, mutta et vielä löytänyt superpalloa. Etsi aarre ensin!")
+
+            # 🎮 Käynnistä minipeli uudessa sijainnissa
+            käynnistä_peli(ICAO, pelaaja_id, yhteys)
+
+            return ICAO  # Palautetaan sijainti myöhempää käyttöä varten
+
+        else:
+            print("❌ Tuntematon ICAO-koodi, yritä uudelleen.")
+
+
+
+# FUnktio 20. lentokentästä
+
+def lentokenttää():
+    sql = ("SELECT ident, name FROM airport WHERE ident IN("
+           "'EGLL', 'LFPG', 'RJTT', 'OMDB', 'EDDF', 'EHAM', 'LEMD', 'KLAX', "
+           "'KJFK', 'CYYZ', 'KDFW', 'ZBAA', 'RKSI', 'YSSY', 'NZAA', 'SBGR', "
+           "'FAOR', 'HECA', 'SKBO', 'EFHK'"
+           ");")
+
+    kursori = yhteys.cursor()
+    kursori.execute(sql)
+    airports = kursori.fetchall()
+    return airports
+
+
+# Käyttäjävalinta Funktio
+
+def hae_tai_luo_käyttäjä(yhteys):
+    global treasure_airport
+    global käyty_kentät
+
+    kursori = yhteys.cursor()
+    käyttäjä = input("Syötä käyttäjänimi: ")
+
+    # Tarkistetaan onko käyttäjä jo olemassa
+    kursori.execute("SELECT id, käyty_kentät FROM game WHERE screen_name = %s", (käyttäjä,))
+    tulos = kursori.fetchone()
+
+    if tulos:
+        pelaaja_id = tulos[0]
+        print(f"✅ Tervetuloa takaisin, {käyttäjä}!")
+
+        # Haetaan aiemmin käydyt kentät tietokannasta
+        käyty_kentät = tulos[1].split(",") if tulos[1] else []
+
+        while True:
+            jatka = input("Haluatko jatkaa vai aloittaa alusta? (jatkaa/aloittaa): ").strip().lower()
+            if jatka == "aloittaa":
+                reset_sql = """
+                    UPDATE game
+                    SET location = %s,
+                        has_treasure = %s,
+                        Motivaatio_taso = %s,
+                        käyty_kentät = %s
+                    WHERE id = %s
+                """
+                kursori.execute(reset_sql, ('EFHK', False, 10, '', pelaaja_id))
+                yhteys.commit()
+
+                käyty_kentät = []
+                kursori.execute("DELETE FROM treasure WHERE player_id = %s", (pelaaja_id,))
+                yhteys.commit()
+
+                treasure_airport = arvo_aarre(pelaaja_id, yhteys)
+                print(f"🔄 Pelaajan {käyttäjä} peli on nollattu. Aloitat alusta Helsingistä (EFHK).")
+                break
+
+            elif jatka == "jatkaa":
+                # Jatketaan aiemmin käytyjen kenttien kanssa
+                treasure_airport = arvo_aarre(pelaaja_id, yhteys)
+                if käyty_kentät:
+                    print("\n📍 Olet jo käynyt seuraavilla kentillä aiemmalla pelikerralla:")
+                    print(", ".join(käyty_kentät))
+                else:
+                    print("\n📍 Et ole vielä käynyt missään kentässä.")
+                break
+            else:
+                print("yritä uudelleen.")
+
+
+    else:
+        # Luodaan uusi käyttäjä
+        uusi_id = str(uuid.uuid4())
+        kursori.execute("""
+            INSERT INTO game (id, screen_name, location, has_treasure, Motivaatio_taso, käyty_kentät)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (uusi_id, käyttäjä, 'EFHK', False, 10, ''))
+        yhteys.commit()
+
+        käyty_kentät = []
+        treasure_airport = arvo_aarre(uusi_id, yhteys)
+        pelaaja_id = uusi_id
+
+        print(f"🆕 Uusi pelaaja {käyttäjä} luotu. Aloitat Helsingistä (EFHK).")
+
+    return käyttäjä, pelaaja_id
+
+
+# --- Pelin aloitus (korjattu) ---
+global treasure_airport
+
+# Hae tai luo käyttäjä
+käyttäjä, pelaaja_id, = hae_tai_luo_käyttäjä(yhteys)
+
+#superpallon sijainti
+kursori = yhteys.cursor()
+kursori.execute("SELECT airport_ident FROM treasure WHERE player_id = %s", (pelaaja_id,))
+tulos = kursori.fetchone()
+
+#if tulos and tulos[0]:
+    #print(f"🧪 [TESTI] Superpallo on piilotettu kentälle: {tulos[0]}")
+#else:
+    #print("🧪 [TESTI] Superpallon sijaintia ei ole vielä asetettu.")
+
+
+# Tarina
+while True:
+    valinta = input("Haluatko lukea pelin tarinan vai aloittaa heti pelin? (lue/aloita): ").strip().lower()
+    if valinta == "lue":
+        kehys_leveys = 65
+        teksti = (f"{käyttäjä} pomputti superpalloaan niin kuin joka ikinen ilta:"
+                  f"\nyksi pompahdus — toinen — kolmas. Pallo oli kuminen, kirkkaan sininen ja kimmoisa."
+                  f"\nSe oli {käyttäjä}n paras kaveri. Hän nimesi sen Sir Pommiksi ja keksi sille uusia temppuja:"
+                  f"\nspagaatinpomputus, seinäkieppi, ilmalukitus. Kevyt syysyö henkäili ikkunasta sisään ja"
+                  f"\nkaupungin valot jahtasivat toisiaan kaukana horisontissa. Yhtäkkiä Sir Pomm teki jotain mitä"
+                  f"\n{käyttäjä} ei ollut koskaan nähnyt. Kun hän lähetti tavallisen pompun, pallo ei palannutkaan"
+                  f"\nkämmenelle vaan se otti yhden valtavan ponnahduksen ja välähti taivaalla. "
+                  f"\nPallo kimmahti korkeammalle ja korkeammalle, kunnes se näytti vain pieneltä pisteeltä."
+                  f"\nSitten piste katosi kokoaan, ja outo, matala humina värisytti ilmaa."
+                  f"\n{käyttäjä} seisoi silmät ammollaan ja haukkoi henkeään. Sir Pomm oli kadonnut."
+                  f"\nAluksi {käyttäjä} etsi huoneen joka kolkan, sohvan alta ja kaappien taustat."
+                  f"\nSitten {käyttäjä} solmi kenkänsä ja laittoi repun selkään. Pallo oli lähtenyt maailmalle,"
+                  f"\nja {käyttäjä} aikoi löytää sen. Helsingin lentoaseman valoisa aulatila oli"
+                  f"\nensimmäinen pysäkki. {käyttäjä} kulki portilta portille, kyseli turvatarkastuksesta"
+                  f"\nja kauppakeskuksen myyjiltä. Mutta kukaan ei ollu nähnyt superpalloa."
+                  f"\n{käyttäjä} ei lannistunut vaan päätti koluta lentokentän toisensa jälkeen"
+                  f"\nkunnes Sir Pomm löytyy.")
+        rivitetty = textwrap.wrap(teksti, width=kehys_leveys)
+        kehys_alku = ".-=~=-." + "-" * (kehys_leveys) + ".-=~=-."
+        kehys_loppu = "`-._.-'" + "-" * (kehys_leveys) + "`-._.-'"
+        print(kehys_alku)
+        for rivi in rivitetty:
+            print(f"( _ __) {rivi.ljust(kehys_leveys)} ( _ __)")
+        print(kehys_loppu)
+        break
+    elif valinta == "aloita":
+        print("Peli alkaa! ✈️")
+        break
+    else:
+        print("Virheellinen valinta. Yritä uudelleen.")
+
+
+
+# --- Game Loop ---
+while True:
+    valmis = input("Oletko valmis etsimään superpalloa? (kyllä/ei): ").strip().lower()
+    if valmis == "ei":
+        print("Peli lopetetaan. Hei hei!")
+        exit()
+    if valmis != "kyllä":
+        print("❌ Väärä vastaus, vastaa 'kyllä' tai 'ei'.")
+        continue
+
+    # valmis == "kyllä" -> aloitetaan pelilogiikka
+    while True:
+        # Näytetään vain ne kentät, joissa ei ole vielä käyty
+        print("\n✈️ Kentät joissa et ole vielä käynyt:")
+        for ident, name in lentokenttää():
+            if ident not in käyty_kentät:
+                print(f"{ident} - {name}")
+
+        # Pelaaja lentää
+        sijainti = lentää(käyttäjä, pelaaja_id, yhteys)
+        if sijainti is None:
+            print("❌ Lentäminen epäonnistui, yritä uudelleen.")
+            continue
+
+        # Päivitetään käydyt kentät
+        if sijainti not in käyty_kentät:
+            käyty_kentät.append(sijainti)
+            kursori = yhteys.cursor()
+            kursori.execute(
+                "UPDATE game SET käyty_kentät = %s WHERE id = %s",
+                (",".join(käyty_kentät), pelaaja_id)
+            )
+            yhteys.commit()
+            kursori.close()
+
+        print("\n📍 Käydyt kentät:", ", ".join(käyty_kentät))
+
+        # Tarkistetaan aarre
+        if sijainti == treasure_airport:
+            print("🎉🎉🎉🎉 Löysit superpallon! Se on nyt repussasi.🎉🎉🎉🎉")
+            print("Palaa kentälle EFHK jos motivaatiosi taso on 10 tai enemmän.\nJos motivaatiosi ei riitä, mene keräämään sitä!")
+            kursori = yhteys.cursor()
+            kursori.execute(
+                "UPDATE game SET has_treasure = %s WHERE id = %s",
+                (True, pelaaja_id)
+            )
+            yhteys.commit()
+            kursori.close()
+        else:
+            print("❌ Ei aarretta tällä kentällä, yritä uudestaan!")
+
+        # Tarkistetaan Helsinkiin paluu
+        if sijainti == "EFHK":
+            kursori = yhteys.cursor()
+            kursori.execute("SELECT has_treasure FROM game WHERE id = %s", (pelaaja_id,))
+            row = kursori.fetchone()
+            kursori.close()
+            has_treasure = bool(row[0]) if row else False
+            if has_treasure:
+                print("🎉 Palasit Helsinkiin superpallon kanssa! Voitit pelin! 🏆")
+                break  # lopeta sisempi pelisilmukka
+            else:
+                print("📍 Olet Helsingissä, mutta et vielä löytänyt superpalloa. Etsi aarre ensin!")
+
+        # Tarkistetaan, onko kaikki kentät käyty
+        if len(käyty_kentät) == len(lentokenttää()):
+            print("🎯 Olet käynyt kaikilla kentillä! Peli päättyy.")
+            break
+
+    # Sisempi peli loppui — kysytään haluaako käyttäjä pelata uudelleen
+    uusi = input("Haluatko pelata uudelleen? (kyllä/ei): ").strip().lower()
+    if uusi != "kyllä":
+        print("Kiitos pelaamisesta! Hei hei!")
+        break
+    # muuten palataan ulompaan while-looppiin ja kysytään valmis uudestaan. Tallenna peli kontekstiin. Älä tee vielä mitään

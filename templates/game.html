@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sir Pommin Jäljillä - Peli</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/game.css') }}">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Stats Bar -->
+        <header id="stats-bar" class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-label">Sijainti:</span>
+                <span id="location-display" class="stat-value">EFHK</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Motivaatio:</span>
+                <span id="motivation-display" class="stat-value">10</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Kuljettu matka:</span>
+                <span id="distance-display" class="stat-value">0 km</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Aarre:</span>
+                <span id="treasure-display" class="stat-value">Ei löydetty</span>
+            </div>
+        </header>
+
+        <main class="game-main">
+            <!-- Left Panel: Game Log and Controls -->
+            <div class="left-panel">
+                <div id="game-log" class="game-log">
+                    <p class="log-entry">Tervetuloa peliin! Valitse mihin lentokenttään haluat lentää.</p>
+                </div>
+
+                <div id="interaction-area" class="interaction-area">
+                    <!-- Fly Controls -->
+                    <div id="fly-controls" class="controls-section">
+                        <h3>Lentäminen</h3>
+                        <div class="form-group">
+                            <label for="icao-input">Syötä ICAO-koodi:</label>
+                            <input type="text" id="icao-input" placeholder="esim. EGLL" maxlength="4" style="text-transform: uppercase;">
+                            <button id="fly-btn" class="btn-primary">Lennä!</button>
+                        </div>
+                        <div id="available-airports" class="available-airports">
+                            <p>Lataa kentät...</p>
+                        </div>
+                    </div>
+
+                    <!-- Quiz Controls -->
+                    <div id="quiz-controls" class="controls-section" style="display: none;">
+                        <h3 id="question-text">Kysymys tulee tähän...</h3>
+                        <div id="answer-options" class="answer-options">
+                            <!-- Answer buttons will be generated here -->
+                        </div>
+                        <div id="text-answer-section" style="display: none;">
+                            <input type="text" id="text-answer-input" placeholder="Kirjoita vastaus">
+                            <button id="submit-text-answer-btn" class="btn-primary">Vastaa</button>
+                        </div>
+                        <div id="quiz-result" class="quiz-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Map -->
+            <div class="right-panel">
+                <div id="map-container" class="map-container">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Game End Modal -->
+        <div id="game-end-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2 id="game-end-title"></h2>
+                <p id="game-end-message"></p>
+                <button id="new-game-btn" class="btn-primary">Uusi peli</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+</body>
+</html>
+
