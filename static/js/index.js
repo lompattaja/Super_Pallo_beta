@@ -29,10 +29,13 @@ const errorMessage = document.getElementById('error-message');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Show story by default
+    // Set story text (but don't show it by default)
     storyTextElement.textContent = storyText;
     
-    // Check if user wants to skip story
+    // Show start section by default (sign-in form)
+    showStartSection();
+    
+    // Check if user wants to go back from story
     skipStoryBtn.addEventListener('click', () => {
         showStartSection();
     });

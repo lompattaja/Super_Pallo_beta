@@ -12,21 +12,33 @@
     <div class="game-container">
         <!-- Stats Bar -->
         <header id="stats-bar" class="stats-bar">
-            <div class="stat-item">
-                <span class="stat-label">Sijainti:</span>
-                <span id="location-display" class="stat-value">EFHK</span>
+            <div class="stats-left">
+                <div class="stat-item">
+                    <span class="stat-label">Sijainti:</span>
+                    <span id="location-display" class="stat-value">EFHK</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Motivaatio:</span>
+                    <span id="motivation-display" class="stat-value">10</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Kuljettu matka:</span>
+                    <span id="distance-display" class="stat-value">0 km</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Aarre:</span>
+                    <span id="treasure-display" class="stat-value">Ei löydetty</span>
+                </div>
             </div>
-            <div class="stat-item">
-                <span class="stat-label">Motivaatio:</span>
-                <span id="motivation-display" class="stat-value">10</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Kuljettu matka:</span>
-                <span id="distance-display" class="stat-value">0 km</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Aarre:</span>
-                <span id="treasure-display" class="stat-value">Ei löydetty</span>
+            <div class="menu-container">
+                <button id="menu-btn" class="menu-btn" aria-label="Menu">
+                    <span class="menu-icon">☰</span>
+                </button>
+                <div id="menu-dropdown" class="menu-dropdown" style="display: none;">
+                    <a href="#" id="menu-home" class="menu-item">Aloitusnäkymä</a>
+                    <a href="#" id="menu-new-game" class="menu-item">Uusi peli</a>
+                    <a href="#" id="menu-about" class="menu-item">Tietoa pelistä</a>
+                </div>
             </div>
         </header>
 

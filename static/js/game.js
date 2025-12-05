@@ -27,6 +27,12 @@ const gameEndModal = document.getElementById('game-end-modal');
 const gameEndTitle = document.getElementById('game-end-title');
 const gameEndMessage = document.getElementById('game-end-message');
 const newGameBtn = document.getElementById('new-game-btn');
+const menuBtn = document.getElementById('menu-btn');
+const menuDropdown = document.getElementById('menu-dropdown');
+const menuContainer = document.querySelector('.menu-container');
+const menuHome = document.getElementById('menu-home');
+const menuNewGame = document.getElementById('menu-new-game');
+const menuAbout = document.getElementById('menu-about');
 
 // Initialize game
 document.addEventListener('DOMContentLoaded', async () => {
@@ -57,6 +63,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     submitTextAnswerBtn.addEventListener('click', handleTextAnswer);
     newGameBtn.addEventListener('click', () => {
         window.location.href = '/';
+    });
+    
+    // Menu functionality
+    menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMenu();
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!menuContainer.contains(e.target)) {
+            menuDropdown.style.display = 'none';
+        }
+    });
+    
+    // Menu item handlers
+    menuHome.addEventListener('click', (e) => {
+        e.preventDefault();
+        menuDropdown.style.display = 'none';
+        window.location.href = '/';
+    });
+    
+    menuNewGame.addEventListener('click', (e) => {
+        e.preventDefault();
+        menuDropdown.style.display = 'none';
+        if (confirm('Haluatko varmasti aloittaa uuden pelin? Nykyinen peli menetetään.')) {
+            sessionStorage.removeItem('player_id');
+            sessionStorage.removeItem('username');
+            window.location.href = '/';
+        }
+    });
+    
+    menuAbout.addEventListener('click', (e) => {
+        e.preventDefault();
+        menuDropdown.style.display = 'none';
+        alert('Sir Pommin Jäljillä - The Great Superball Chase\n\nEtsi superpallo lentämällä eri lentokentille ja vastaamalla kysymyksiin! Kerää motivaatiota ja löydä aarre.');
     });
     
     addLogEntry('Peli aloitettu! Valitse mihin lentokenttään haluat lentää.', 'info');
@@ -406,6 +448,15 @@ function addLogEntry(message, type = 'info') {
     entry.textContent = message;
     gameLog.appendChild(entry);
     gameLog.scrollTop = gameLog.scrollHeight;
+}
+
+// Toggle menu dropdown
+function toggleMenu() {
+    if (menuDropdown.style.display === 'none' || menuDropdown.style.display === '') {
+        menuDropdown.style.display = 'block';
+    } else {
+        menuDropdown.style.display = 'none';
+    }
 }
 
 // Show game end modal
