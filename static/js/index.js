@@ -26,18 +26,24 @@ const readStoryBtn = document.getElementById('read-story-btn');
 const startGameBtn = document.getElementById('start-game-btn');
 const usernameInput = document.getElementById('username-input');
 const errorMessage = document.getElementById('error-message');
+const customModal = document.getElementById('custom-modal');
+const modalTitle = document.getElementById('modal-title');
+const modalMessage = document.getElementById('modal-message');
+const modalButtons = document.getElementById('modal-buttons');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Set story text (but don't show it by default)
-    storyTextElement.textContent = storyText;
-    
     // Show start section by default (sign-in form)
     showStartSection();
     
-    // Check if user wants to go back from story
+    // Skip story button - continue to game
     skipStoryBtn.addEventListener('click', () => {
-        showStartSection();
+        const playerId = sessionStorage.getItem('player_id');
+        if (playerId) {
+            window.location.href = '/game';
+        } else {
+            showStartSection();
+        }
     });
     
     // Read story button
@@ -61,12 +67,30 @@ document.addEventListener('DOMContentLoaded', () => {
 function showStorySection() {
     storySection.style.display = 'block';
     startSection.style.display = 'none';
+    storyTextElement.textContent = '';
+    typewriterEffect(storyText, storyTextElement);
 }
 
 function showStartSection() {
     storySection.style.display = 'none';
     startSection.style.display = 'block';
     usernameInput.focus();
+}
+
+// Typewriter effect for story
+function typewriterEffect(text, element, speed = 30) {
+    let index = 0;
+    element.textContent = '';
+    
+    function type() {
+        if (index < text.length) {
+            element.textContent += text.charAt(index);
+            index++;
+            setTimeout(type, speed);
+        }
+    }
+    
+    type();
 }
 
 function showError(message) {
@@ -109,8 +133,8 @@ async function startGame() {
             sessionStorage.setItem('player_id', data.player_id);
             sessionStorage.setItem('username', username);
             
-            // Redirect to game page
-            window.location.href = '/game';
+            // Show story after successful login
+            showStoryAfterLogin();
         } else {
             showError(data.message || 'Virhe pelin aloittamisessa');
         }
@@ -118,5 +142,47 @@ async function startGame() {
         console.error('Error starting game:', error);
         showError('Yhteysvirhe. Tarkista että palvelin on käynnissä.');
     }
+}
+
+function showStoryAfterLogin() {
+    startSection.style.display = 'none';
+    storySection.style.display = 'block';
+    storyTextElement.textContent = '';
+    typewriterEffect(storyText, storyTextElement);
+}
+
+// Custom modal functions
+function showModal(title, message, buttons = []) {
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+    modalButtons.innerHTML = '';
+    
+    buttons.forEach(button => {
+        const btn = document.createElement('button');
+        btn.textContent = button.text;
+        btn.className = `modal-btn ${button.primary ? 'modal-btn-primary' : 'modal-btn-secondary'}`;
+        btn.onclick = () => {
+            customModal.style.display = 'none';
+            if (button.onClick) {
+                button.onClick();
+            }
+        };
+        modalButtons.appendChild(btn);
+    });
+    
+    customModal.style.display = 'flex';
+}
+
+function showAlert(title, message) {
+    showModal(title, message, [
+        { text: 'OK', primary: true }
+    ]);
+}
+
+function showConfirm(title, message, onConfirm, onCancel) {
+    showModal(title, message, [
+        { text: 'Peruuta', primary: false, onClick: onCancel },
+        { text: 'Vahvista', primary: true, onClick: onConfirm }
+    ]);
 }
 

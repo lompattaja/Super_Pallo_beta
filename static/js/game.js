@@ -33,14 +33,19 @@ const menuContainer = document.querySelector('.menu-container');
 const menuHome = document.getElementById('menu-home');
 const menuNewGame = document.getElementById('menu-new-game');
 const menuAbout = document.getElementById('menu-about');
+const customModal = document.getElementById('custom-modal');
+const modalTitle = document.getElementById('modal-title');
+const modalMessage = document.getElementById('modal-message');
+const modalButtons = document.getElementById('modal-buttons');
 
 // Initialize game
 document.addEventListener('DOMContentLoaded', async () => {
     playerId = sessionStorage.getItem('player_id');
     
     if (!playerId) {
-        alert('Pelaajaa ei löytynyt. Siirrytään aloitusnäkymään.');
-        window.location.href = '/';
+        showAlert('Pelaajaa ei löytynyt', 'Siirrytään aloitusnäkymään.', () => {
+            window.location.href = '/';
+        });
         return;
     }
     
@@ -88,17 +93,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     menuNewGame.addEventListener('click', (e) => {
         e.preventDefault();
         menuDropdown.style.display = 'none';
-        if (confirm('Haluatko varmasti aloittaa uuden pelin? Nykyinen peli menetetään.')) {
-            sessionStorage.removeItem('player_id');
-            sessionStorage.removeItem('username');
-            window.location.href = '/';
-        }
+        showConfirm(
+            'Uusi peli',
+            'Haluatko varmasti aloittaa uuden pelin? Nykyinen peli menetetään.',
+            () => {
+                sessionStorage.removeItem('player_id');
+                sessionStorage.removeItem('username');
+                window.location.href = '/';
+            },
+            () => {
+                // Cancel - do nothing
+            }
+        );
     });
     
     menuAbout.addEventListener('click', (e) => {
         e.preventDefault();
         menuDropdown.style.display = 'none';
-        alert('Sir Pommin Jäljillä - The Great Superball Chase\n\nEtsi superpallo lentämällä eri lentokentille ja vastaamalla kysymyksiin! Kerää motivaatiota ja löydä aarre.');
+        showAlert(
+            'Tietoa pelistä',
+            'Sir Pommin Jäljillä - The Great Superball Chase\n\nEtsi superpallo lentämällä eri lentokentille ja vastaamalla kysymyksiin! Kerää motivaatiota ja löydä aarre.'
+        );
     });
     
     addLogEntry('Peli aloitettu! Valitse mihin lentokenttään haluat lentää.', 'info');
@@ -457,6 +472,41 @@ function toggleMenu() {
     } else {
         menuDropdown.style.display = 'none';
     }
+}
+
+// Custom modal functions
+function showModal(title, message, buttons = []) {
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+    modalButtons.innerHTML = '';
+    
+    buttons.forEach(button => {
+        const btn = document.createElement('button');
+        btn.textContent = button.text;
+        btn.className = `modal-btn ${button.primary ? 'modal-btn-primary' : 'modal-btn-secondary'}`;
+        btn.onclick = () => {
+            customModal.style.display = 'none';
+            if (button.onClick) {
+                button.onClick();
+            }
+        };
+        modalButtons.appendChild(btn);
+    });
+    
+    customModal.style.display = 'flex';
+}
+
+function showAlert(title, message, onOk) {
+    showModal(title, message, [
+        { text: 'OK', primary: true, onClick: onOk || (() => {}) }
+    ]);
+}
+
+function showConfirm(title, message, onConfirm, onCancel) {
+    showModal(title, message, [
+        { text: 'Peruuta', primary: false, onClick: onCancel || (() => {}) },
+        { text: 'Vahvista', primary: true, onClick: onConfirm || (() => {}) }
+    ]);
 }
 
 // Show game end modal

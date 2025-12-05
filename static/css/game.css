@@ -348,6 +348,82 @@
     line-height: 1.6;
 }
 
+/* Custom Modal */
+.custom-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1001;
+}
+
+.custom-modal-content {
+    background-color: #16213e;
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+    border: 2px solid #e94560;
+}
+
+.custom-modal-content h3 {
+    color: #e94560;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+
+.custom-modal-content p {
+    color: #e0e0e0;
+    margin-bottom: 30px;
+    font-size: 1.1em;
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.modal-btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.modal-btn-primary {
+    background-color: #e94560;
+    color: white;
+}
+
+.modal-btn-primary:hover {
+    background-color: #ff2e63;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(233, 69, 96, 0.4);
+}
+
+.modal-btn-secondary {
+    background-color: #0f3460;
+    color: #e0e0e0;
+}
+
+.modal-btn-secondary:hover {
+    background-color: #1a4a7a;
+    transform: translateY(-2px);
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .game-main {
